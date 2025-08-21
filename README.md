@@ -20,7 +20,7 @@ The agent (🚀) must learn to **navigate to a goal**, while avoiding obstacles,
 
 ---
 
-## 📊 Demo / Live App
+## 📊 Demo / Live App : https://spacezerogravity.streamlit.app/
 You can run the interactive demo locally or deploy it:  
 
 ### 🔹 Run Locally
@@ -34,3 +34,4 @@ pip install -r requirements.txt
 
 # Run the Streamlit app
 streamlit run RL.py
+
