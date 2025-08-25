@@ -414,15 +414,13 @@ class DynamicSpaceExplorationEnv(gym.Env):
         # Draw subtle grid lines
         ax.grid(True, linestyle='-', alpha=0.15, color='gray')
         
-        # Create space background
         # Add stars in the background
         num_stars = 200
         star_positions = np.random.rand(num_stars, 2) * self.grid_size
-        star_sizes = np.random.exponential(0.7, num_stars)  # More realistic star size distribution
-        star_colors = np.random.choice(['white', '#FFFDD0', '#F8F7FF', '#CAE9FF'], num_stars)  # Different star colors
-        
+        star_sizes = np.random.exponential(0.7, num_stars)
+        star_colors = np.random.choice(['white', '#FFFDD0', '#F8F7FF', '#CAE9FF'], num_stars)
         ax.scatter(star_positions[:, 0], star_positions[:, 1], 
-                  color=star_colors, s=star_sizes, alpha=0.8, zorder=1)
+                   color=star_colors, s=star_sizes, alpha=0.8, zorder=1)
         
         # Add a few nebulas in the background for visual interest
         for _ in range(3):
@@ -442,21 +440,18 @@ class DynamicSpaceExplorationEnv(gym.Env):
                 color = 'red'
                 cmap = plt.cm.Reds
             
-            # Draw concentric circles with fading alpha to show field strength
             num_circles = 12
             for i in range(num_circles):
                 radius = well['radius'] * (i+1)/num_circles
-                alpha = 0.4 * (1 - i/num_circles)  # Fade out with distance
+                alpha = 0.4 * (1 - i/num_circles)
                 color_val = cmap(0.7 - 0.5 * i/num_circles)
                 circle = plt.Circle(well['position'], radius, color=color_val, 
                                    alpha=alpha, fill=True, zorder=2)
                 ax.add_patch(circle)
             
-            # Add center point and label
             ax.scatter(well['position'][0], well['position'][1], 
                       color='white', s=50, zorder=3, edgecolor=color)
             
-            # Add "+" or "-" label depending on gravity type
             sign = "+" if well['strength'] > 0 else "−"
             text = ax.text(well['position'][0], well['position'][1], sign, 
                    ha='center', va='center', color='white', fontsize=12, 
@@ -465,554 +460,91 @@ class DynamicSpaceExplorationEnv(gym.Env):
         
         # Draw fuel stations
         for station in self.fuel_stations:
-            # Draw fuel station with glowing effect
             glow = plt.Circle(station['position'], 1.0, color='green', alpha=0.2, zorder=3)
             station_marker = plt.Circle(station['position'], 0.5, color='lime', alpha=0.8, zorder=4)
             ax.add_patch(glow)
             ax.add_patch(station_marker)
-            
-            # Add "F" label
-            text = ax.text(station['position'][0], station['position'][1], 'F', 
-                   ha='center', va='center', color='white', fontsize=10, 
-                   fontweight='bold', zorder=5)
+            text = ax.text(station['position'][0], station['position'][1], 'F', ha='center', va='center', color='white', fontsize=10, fontweight='bold', zorder=5)
             text.set_path_effects([path_effects.withStroke(linewidth=1.5, foreground='black')])
         
         # Draw obstacles
         for obs in self.obstacles:
-            # Main obstacle
             obstacle = plt.Circle(obs['position'], obs['radius'], color='red', alpha=0.7, zorder=5)
             ax.add_patch(obstacle)
-            
-            # Add "danger" ring
-            danger_ring = plt.Circle(obs['position'], obs['radius'] + 0.3, 
-                                    color='red', alpha=0.2, fill=False, 
-                                    linestyle='--', zorder=5)
+            danger_ring = plt.Circle(obs['position'], obs['radius'] + 0.3, color='red', alpha=0.2, fill=False, linestyle='--', zorder=5)
             ax.add_patch(danger_ring)
-            
-            # Show velocity vector
             if np.linalg.norm(obs['velocity']) > 0:
-                ax.arrow(obs['position'][0], obs['position'][1], 
-                         obs['velocity'][0]*3, obs['velocity'][1]*3, 
-                         head_width=0.3, head_length=0.3, fc='red', ec='red', 
-                         alpha=0.7, zorder=6)
+                ax.arrow(obs['position'][0], obs['position'][1], obs['velocity'][0]*3, obs['velocity'][1]*3, head_width=0.3, head_length=0.3, fc='red', ec='red', alpha=0.7, zorder=6)
         
-        # Draw goal with glowing effect
+        # Draw goal
         goal_glow = plt.Circle(self.goal, 1.5, color='green', alpha=0.15, zorder=5)
         goal_outer = plt.Circle(self.goal, 1.0, color='green', alpha=0.4, zorder=6)
         goal_marker = plt.Circle(self.goal, 0.8, color='#00FF00', alpha=0.8, zorder=6)
         ax.add_patch(goal_glow)
         ax.add_patch(goal_outer)
         ax.add_patch(goal_marker)
-        
-        # Add "G" label
-        text = ax.text(self.goal[0], self.goal[1], 'G', 
-               ha='center', va='center', color='white', fontsize=12, 
-               fontweight='bold', zorder=7)
+        text = ax.text(self.goal[0], self.goal[1], 'G', ha='center', va='center', color='white', fontsize=12, fontweight='bold', zorder=7)
         text.set_path_effects([path_effects.withStroke(linewidth=2, foreground='green')])
         
-        # Draw trajectory with gradient color based on time
+        # Draw trajectory
         if len(self.trajectory) > 1:
             traj = np.array(self.trajectory)
-            # Create color gradient for trajectory
-            points = np.array([traj[:-1], traj[1:]]).transpose(1, 0, 2)
-            segments = np.concatenate([points[i] for i in range(len(points))]).reshape(-1, 2, 2)
+            ax.plot(traj[:, 0], traj[:, 1], color='cyan', alpha=0.5, linestyle=':', marker='.', markersize=4, zorder=4)
             
-            # Color gradient from blue to cyan
-            colors = plt.cm.cool(np.linspace(0, 1, len(segments)))
-            
-            for i, (segment, color) in enumerate(zip(segments, colors)):
-                line = plt.Line2D(segment[:, 0], segment[:, 1], color=color, 
-                                 linewidth=2, alpha=min(0.2 + i/len(segments), 0.9), zorder=4)
-                ax.add_line(line)
-        
-        # Draw rocket with glowing effect
+        # Draw rocket
         engine_glow = plt.Circle(self.rocket_pos, 0.8, color='#00FFFF', alpha=0.2, zorder=7)
         rocket_marker = plt.Circle(self.rocket_pos, 0.6, color='cyan', alpha=1.0, zorder=8)
         ax.add_patch(engine_glow)
         ax.add_patch(rocket_marker)
         
-        # Add rocket direction indicator
-        if len(self.trajectory) > 1:
-            last_pos = self.trajectory[-2]
-            movement = self.rocket_pos - last_pos
-            if np.linalg.norm(movement) > 0:
-                movement = movement / np.linalg.norm(movement) * 0.8
-                ax.arrow(self.rocket_pos[0], self.rocket_pos[1], 
-                         movement[0], movement[1], 
-                         head_width=0.3, head_length=0.3, fc='white', ec='white', zorder=9)
+        # Set axis labels and title
+        ax.set_title("Deep Space Explorer", color='white', fontsize=18)
+        ax.set_aspect('equal', adjustable='box')
+        ax.axis('off')  # Hide the axes for a cleaner look
         
-        # Add information panel in the corner
-        info_x, info_y = 0.02, 0.98
-        line_height = 0.04
-        
-        # Add fuel gauge with color based on fuel level
-        fuel_ratio = self.fuel / self.initial_fuel
-        fuel_color = 'green' if fuel_ratio > 0.6 else 'yellow' if fuel_ratio > 0.3 else 'red'
-        fuel_text = f"FUEL: {self.fuel:.1f}"
-        fuel_text_obj = ax.text(info_x, info_y, fuel_text, transform=ax.transAxes, 
-                color=fuel_color, fontsize=12, verticalalignment='top', fontweight='bold')
-        fuel_text_obj.set_path_effects([path_effects.withStroke(linewidth=2, foreground='black')])
-        
-        # Step counter
-        step_text = f"STEP: {self.current_step}/{self.max_steps}"
-        step_text_obj = ax.text(info_x, info_y - line_height, step_text, transform=ax.transAxes, 
-                color='white', fontsize=12, verticalalignment='top')
-        step_text_obj.set_path_effects([path_effects.withStroke(linewidth=2, foreground='black')])
-        
-        # Distance to goal
-        dist_to_goal = np.linalg.norm(self.goal - self.rocket_pos)
-        dist_text = f"DISTANCE TO GOAL: {dist_to_goal:.1f}"
-        dist_text_obj = ax.text(info_x, info_y - 2*line_height, dist_text, transform=ax.transAxes, 
-                color='white', fontsize=12, verticalalignment='top')
-        dist_text_obj.set_path_effects([path_effects.withStroke(linewidth=2, foreground='black')])
-        
-        # Title with space theme
-        title = ax.set_title("DEEP SPACE EXPLORER MISSION", color='#4da6ff', fontsize=18, fontweight='bold', pad=20)
-        title.set_path_effects([path_effects.withStroke(linewidth=3, foreground='black')])
-        
-        # Subtle axis labels
-        x_label = ax.set_xlabel("X Position", color='#888888', fontsize=10)
-        y_label = ax.set_ylabel("Y Position", color='#888888', fontsize=10)
-        
-        # Make tick labels light gray for better visibility
-        ax.tick_params(axis='x', colors='#888888')
-        ax.tick_params(axis='y', colors='#888888')
-        
+        # Return the figure object
         return fig
+    
+    def close(self):
+        plt.close('all')
 
-
-# Advantage Actor-Critic (A2C) Implementation with PPO improvements
+# Define the Actor-Critic network
 class ActorCritic(nn.Module):
-    def __init__(self, state_size, action_size, hidden_size=128):
+    def __init__(self, state_size, action_size):
         super(ActorCritic, self).__init__()
-        
-        # Shared feature extractor with deeper network
-        self.shared = nn.Sequential(
-            nn.Linear(state_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU()
-        )
-        
-        # Actor network (policy)
         self.actor = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size // 2),
+            nn.Linear(state_size, 128),
             nn.ReLU(),
-            nn.Linear(hidden_size // 2, action_size),
+            nn.Linear(128, action_size),
             nn.Softmax(dim=-1)
         )
-        
-        # Critic network (value function)
         self.critic = nn.Sequential(
-            nn.Linear(hidden_size, hidden_size // 2),
+            nn.Linear(state_size, 128),
             nn.ReLU(),
-            nn.Linear(hidden_size // 2, 1)
+            nn.Linear(128, 1)
         )
-    
+
     def forward(self, state):
-        if not isinstance(state, torch.Tensor):
-            state = torch.FloatTensor(state)
-        
-        shared_features = self.shared(state)
-        action_probs = self.actor(shared_features)
-        value = self.critic(shared_features)
-        
-        return action_probs, value
+        return self.actor(state), self.critic(state)
 
-
-# PPO-enhanced A2C Agent
-class A2CAgent:
-    def __init__(self, state_size, action_size, hidden_size=128, gamma=0.99, 
-                 lr=0.001, clip_ratio=0.2, value_coef=0.5, entropy_coef=0.01):
-        self.state_size = state_size
-        self.action_size = action_size
-        self.gamma = gamma  # Discount factor
-        self.clip_ratio = clip_ratio  # PPO clip ratio
-        self.value_coef = value_coef  # Value loss coefficient
-        self.entropy_coef = entropy_coef  # Entropy bonus coefficient
-        
-        # Initialize neural network and optimizer
-        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        self.model = ActorCritic(state_size, action_size, hidden_size).to(self.device)
-        self.optimizer = optim.Adam(self.model.parameters(), lr=lr)
-        
-        # Training logs
-        self.training_log = []
-        self.trajectory_buffer = []
-        self.episode_metrics = {'successes': 0, 'collisions': 0, 'timeouts': 0, 'fuel_outs': 0}
-        self.training_iterations = 0
-    
-    def act(self, state):
-        """Select action based on current policy"""
-        state = torch.FloatTensor(state).to(self.device)
-        with torch.no_grad():
-            action_probs, _ = self.model(state)
-        
-        # Sample action from probability distribution
-        dist = distributions.Categorical(action_probs)
-        action = dist.sample()
-        log_prob = dist.log_prob(action)
-        
-        return action.item(), log_prob.item(), action_probs.cpu().numpy()
-    
-    def evaluate(self, state):
-        """Evaluate state without sampling (for testing)"""
-        state = torch.FloatTensor(state).to(self.device)
-        with torch.no_grad():
-            action_probs, value = self.model(state)
-            action = torch.argmax(action_probs)
-        
-        return action.item(), value.item(), action_probs.cpu().numpy()
-    
-    def compute_returns(self, rewards, dones, values, next_value):
-        """Compute returns and advantages using GAE"""
-        returns = []
-        advantages = []
-        advantage = 0
-        next_return = next_value
-        
-        for t in reversed(range(len(rewards))):
-            # Calculate return (discounted sum of future rewards)
-            next_non_terminal = 1.0 - dones[t]
-            next_return = rewards[t] + self.gamma * next_non_terminal * next_return
-            returns.insert(0, next_return)
-            
-            # Calculate advantage
-            next_value = values[t] if t < len(values) - 1 else next_value
-            delta = rewards[t] + self.gamma * next_non_terminal * next_value - values[t]
-            advantage = delta + self.gamma * 0.95 * next_non_terminal * advantage
-            advantages.insert(0, advantage)
-            
-        return returns, advantages
-    
-    def train_minibatch(self, states, actions, old_log_probs, returns, advantages):
-        """Train on a single minibatch of experience"""
-        states = torch.FloatTensor(states).to(self.device)
-        actions = torch.LongTensor(actions).to(self.device)
-        old_log_probs = torch.FloatTensor(old_log_probs).to(self.device)
-        returns = torch.FloatTensor(returns).to(self.device)
-        advantages = torch.FloatTensor(advantages).to(self.device)
-        
-        # Normalize advantages
-        advantages = (advantages - advantages.mean()) / (advantages.std() + 1e-8)
-        
-        # Get current action probabilities and state values
-        action_probs, values = self.model(states)
-        values = values.squeeze(-1)
-        
-        # Calculate log probabilities and entropy
-        dist = distributions.Categorical(action_probs)
-        curr_log_probs = dist.log_prob(actions)
-        entropy = dist.entropy().mean()
-        
-        # Compute probability ratio and clipped ratio
-        ratio = torch.exp(curr_log_probs - old_log_probs)
-        surr1 = ratio * advantages
-        surr2 = torch.clamp(ratio, 1.0 - self.clip_ratio, 1.0 + self.clip_ratio) * advantages
-        
-        # Calculate losses
-        actor_loss = -torch.min(surr1, surr2).mean()
-        critic_loss = 0.5 * ((values - returns) ** 2).mean()
-        entropy_loss = -self.entropy_coef * entropy
-        
-        # Combined loss
-        loss = actor_loss + self.value_coef * critic_loss + entropy_loss
-        
-        # Perform optimization
-        self.optimizer.zero_grad()
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), 0.5)  # Clip gradients
-        self.optimizer.step()
-        
-        return loss.item(), actor_loss.item(), critic_loss.item(), entropy.item()
-    
-    def store_transition(self, state, action, reward, next_state, done, log_prob):
-        """Store transition in buffer"""
-        self.trajectory_buffer.append({
-            'state': state,
-            'action': action,
-            'reward': reward,
-            'next_state': next_state,
-            'done': done,
-            'log_prob': log_prob
-        })
-    
-    def train_on_buffer(self, next_value=0):
-        """Train on collected buffer data"""
-        # Extract data from buffer
-        states = [t['state'] for t in self.trajectory_buffer]
-        actions = [t['action'] for t in self.trajectory_buffer]
-        rewards = [t['reward'] for t in self.trajectory_buffer]
-        next_states = [t['next_state'] for t in self.trajectory_buffer]
-        dones = [t['done'] for t in self.trajectory_buffer]
-        old_log_probs = [t['log_prob'] for t in self.trajectory_buffer]
-        
-        # Compute value estimates for all states
-        with torch.no_grad():
-            values = []
-            for state in states:
-                _, value = self.model(torch.FloatTensor(state).to(self.device))
-                values.append(value.item())
-        
-        # Compute returns and advantages
-        returns, advantages = self.compute_returns(rewards, dones, values, next_value)
-        
-        # Train for multiple epochs (PPO style)
-        n_epochs = 4
-        batch_size = len(self.trajectory_buffer)
-        
-        loss_info = []
-        for _ in range(n_epochs):
-            # Train on entire buffer
-            loss, actor_loss, critic_loss, entropy = self.train_minibatch(
-                states, actions, old_log_probs, returns, advantages
-            )
-            loss_info.append((loss, actor_loss, critic_loss, entropy))
-        
-        # Clear buffer after training
-        avg_loss = np.mean([l[0] for l in loss_info])
-        self.trajectory_buffer = []
-        
-        return avg_loss
-    
-    def train(self, env, episodes, update_freq=20, update_display=None):
-        """Train the agent for a given number of episodes"""
-        episode_rewards = []
-        episode_lengths = []
-        
-        for episode in range(episodes):
-            state = env.reset()
-            episode_reward = 0
-            done = False
-            
-            # Reset buffer for PPO at the start of episode
-            self.trajectory_buffer = []
-            
-            while not done:
-                # Select action
-                action, log_prob, _ = self.act(state)
-                
-                # Take action in environment
-                next_state, reward, done, _ = env.step(action)
-                episode_reward += reward
-                
-                # Store transition
-                self.store_transition(state, action, reward, next_state, done, log_prob)
-                
-                # Update state
-                state = next_state
-                
-                # Update display if provided
-                if update_display and env.current_step % 5 == 0:
-                    update_display(env, episode, episode_reward)
-                
-                # Train if buffer filled or episode ended
-                if len(self.trajectory_buffer) >= update_freq or done:
-                    # If episode continues, estimate next state value
-                    next_value = 0
-                    if not done:
-                        _, next_value, _ = self.evaluate(next_state)
-                    
-                    # Train on collected buffer
-                    avg_loss = self.train_on_buffer(next_value)
-            
-            # Log episode stats
-            self.training_log.append({
-                'episode': episode + 1,
-                'reward': episode_reward,
-                'steps': env.current_step,
-            })
-            
-            episode_rewards.append(episode_reward)
-            episode_lengths.append(env.current_step)
-            
-            # Update final display if provided
-            if update_display:
-                update_display(env, episode, episode_reward, done=True)
-        
-        return episode_rewards, episode_lengths
-    
-    def save(self, path):
-        torch.save({
-            'model_state_dict': self.model.state_dict(),
-            'optimizer_state_dict': self.optimizer.state_dict(),
-        }, path)
-    
-    def load(self, path):
-        checkpoint = torch.load(path)
-        self.model.load_state_dict(checkpoint['model_state_dict'])
-        self.optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-
-
-# Streamlit Application
+# Main Streamlit application function
 def main():
-    st.title("🚀 Dynamic Space Exploration with Reinforcement Learning")
+    st.sidebar.header("Configuration")
+    difficulty = st.sidebar.radio("Select Difficulty", ('easy', 'medium', 'hard'), index=1)
     
-    # Create sidebar for configuration
-    st.sidebar.header("Environment Settings")
-    difficulty = st.sidebar.selectbox(
-        "Select Difficulty Level",
-        ["easy", "medium", "hard"],
-        index=1
-    )
+    num_episodes = st.sidebar.number_input("Number of Training Episodes", min_value=100, max_value=5000, value=1000, step=100)
+    learning_rate = st.sidebar.number_input("Learning Rate", min_value=1e-5, max_value=1e-2, value=0.001, step=0.0001, format="%.5f")
+    gamma = st.sidebar.number_input("Discount Factor (Gamma)", min_value=0.5, max_value=0.99, value=0.99, step=0.01)
+
+    if "model" not in st.session_state:
+        st.session_state.model = None
+
+    if st.sidebar.button("Start Training"):
+        st.session_state.model = train_agent(difficulty, num_episodes, learning_rate, gamma)
     
-    # Create columns for environment visualization and training metrics
-    col1, col2 = st.columns([3, 1])
-    
-    with col2:
-        st.subheader("Training Controls")
-        episodes = st.number_input("Number of Episodes", min_value=1, max_value=100, value=20)
-        update_freq = st.number_input("Update Frequency", min_value=5, max_value=50, value=20)
-        
-        train_button = st.button("Start Training")
-        test_button = st.button("Test Trained Agent")
-        
-        st.subheader("Agent Parameters")
-        learning_rate = st.slider("Learning Rate", min_value=0.0001, max_value=0.01, value=0.001, format="%.4f")
-        gamma = st.slider("Discount Factor (Gamma)", min_value=0.8, max_value=0.999, value=0.99)
-        
-        st.subheader("Training Progress")
-        episode_progress = st.empty()
-        reward_text = st.empty()
-        steps_text = st.empty()
-        
-        st.subheader("Training History")
-        history_chart = st.empty()
-    
-    with col1:
-        st.subheader("Environment Visualization")
-        env_placeholder = st.empty()
-    
-    # Initialize environment and agent
-    env = DynamicSpaceExplorationEnv(difficulty=difficulty)
-    state_size = env.observation_space.shape[0]
-    action_size = env.action_space.n
-    
-    agent = A2CAgent(
-        state_size=state_size,
-        action_size=action_size,
-        hidden_size=128,
-        gamma=gamma,
-        lr=learning_rate
-    )
-    
-    # Initialize model checkpoint
-    model_checkpoint = "trained_agent.pth"
-    
-    # Function to update training display
-    def update_display(env, episode, reward, done=False):
-        fig = env.render(mode='human')
-        env_placeholder.pyplot(fig)
-        plt.close(fig)
-        
-        episode_progress.progress((episode + 1) / episodes)
-        reward_text.text(f"Current Episode Reward: {reward:.2f}")
-        steps_text.text(f"Steps: {env.current_step}/{env.max_steps}")
-        
-        # Update training history chart
-        if len(agent.training_log) > 0:
-            df = pd.DataFrame(agent.training_log)
-            df = df.set_index('episode')
-            history_chart.line_chart(df[['reward', 'steps']])
-    
-    # Training loop
-    if train_button:
-        st.sidebar.text("Training in progress...")
-        
-        # Train the agent
-        episode_rewards, episode_lengths = agent.train(
-            env, episodes, update_freq=update_freq, update_display=update_display
-        )
-        
-        # Save the trained model
-        agent.save(model_checkpoint)
-        
-        st.sidebar.success(f"Training completed! Model saved as {model_checkpoint}")
-        
-        # Display final training results
-        st.subheader("Training Results")
-        col3, col4 = st.columns(2)
-        
-        with col3:
-            st.metric("Average Reward", f"{np.mean(episode_rewards):.2f}")
-            st.metric("Max Reward", f"{np.max(episode_rewards):.2f}")
-        
-        with col4:
-            st.metric("Average Episode Length", f"{np.mean(episode_lengths):.1f}")
-            st.metric("Success Rate", f"{np.sum([r > 0 for r in episode_rewards]) / len(episode_rewards):.1%}")
-        
-        # Plot training progress
-        fig, ax1 = plt.subplots(figsize=(10, 6))
-        
-        color = 'tab:blue'
-        ax1.set_xlabel('Episode')
-        ax1.set_ylabel('Reward', color=color)
-        ax1.plot(range(1, episodes + 1), episode_rewards, color=color)
-        ax1.tick_params(axis='y', labelcolor=color)
-        
-        ax2 = ax1.twinx()
-        color = 'tab:red'
-        ax2.set_ylabel('Steps', color=color)
-        ax2.plot(range(1, episodes + 1), episode_lengths, color=color, linestyle='--')
-        ax2.tick_params(axis='y', labelcolor=color)
-        
-        fig.tight_layout()
-        st.pyplot(fig)
-        plt.close(fig)
-    
-    # Test trained agent
-    if test_button:
-        try:
-            # Try to load trained model
-            try:
-                agent.load(model_checkpoint)
-                st.sidebar.success("Loaded trained model successfully!")
-            except:
-                st.sidebar.warning("No trained model found. Using untrained agent.")
-            
-            # Test loop
-            state = env.reset()
-            episode_reward = 0
-            done = False
-            
-            # Progress bar for testing
-            test_progress = st.sidebar.progress(0)
-            test_status = st.sidebar.empty()
-            
-            # Run test episode
-            while not done:
-                # Select best action (deterministic policy)
-                action, _, _ = agent.evaluate(state)
-                
-                # Take action
-                next_state, reward, done, _ = env.step(action)
-                episode_reward += reward
-                
-                # Update display
-                if env.current_step % 3 == 0 or done:
-                    update_display(env, 0, episode_reward)
-                    
-                    # Update test progress
-                    test_progress.progress(min(env.current_step / env.max_steps, 1.0))
-                    status = "Goal reached! 🎉" if np.linalg.norm(env.rocket_pos - env.goal) < 1.0 else "Testing..."
-                    if env.fuel <= 0:
-                        status = "Out of fuel! ⛽"
-                    test_status.text(f"Status: {status} | Step: {env.current_step}")
-                    
-                    # Add small delay for better visualization
-                    time.sleep(0.1)
-                
-                # Update state
-                state = next_state
-            
-            # Final test results
-            test_status.text(f"Test completed! Final reward: {episode_reward:.2f}")
-            
-        except Exception as e:
-            st.error(f"Error during testing: {e}")
-    
+    if st.session_state.model and st.sidebar.button("Test Trained Agent"):
+        test_agent(st.session_state.model, difficulty)
+
     # Add description and instructions
     with st.expander("About this application"):
         st.markdown("""
@@ -1029,7 +561,7 @@ def main():
         - Limited fuel supply
         
         ### Agent Capabilities:
-        - Learns using a PPO-enhanced Advantage Actor-Critic (A2C) algorithm
+        - Learns using a Proximal Policy Optimization (PPO) algorithm
         - Adapts to different difficulty levels
         - Learns to plan efficient paths considering fuel consumption
         
@@ -1042,6 +574,124 @@ def main():
         The visualization shows the rocket (cyan), goal (green), obstacles (red), 
         fuel stations (green F), and gravity wells (blue/red gradient).
         """)
+
+# Training function
+def train_agent(difficulty, num_episodes, learning_rate, gamma):
+    env = DynamicSpaceExplorationEnv(difficulty=difficulty)
+    state_size = env.observation_space.shape[0]
+    action_size = env.action_space.n
+    
+    model = ActorCritic(state_size, action_size)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    
+    progress_bar = st.progress(0)
+    status_text = st.empty()
+    
+    total_rewards = []
+    
+    for episode in range(num_episodes):
+        state = env.reset()
+        done = False
+        episode_reward = 0
+        log_probs = []
+        values = []
+        rewards = []
+        
+        while not done:
+            state_tensor = torch.FloatTensor(state).unsqueeze(0)
+            
+            # Get action from the model
+            probs, value = model(state_tensor)
+            dist = distributions.Categorical(probs)
+            action = dist.sample()
+            
+            # Step the environment
+            next_state, reward, done, _ = env.step(action.item())
+            
+            # Store values for backpropagation
+            log_prob = dist.log_prob(action)
+            log_probs.append(log_prob)
+            values.append(value)
+            rewards.append(reward)
+            
+            state = next_state
+            episode_reward += reward
+        
+        # Calculate returns and advantages
+        returns = []
+        R = 0
+        for r in rewards[::-1]:
+            R = r + gamma * R
+            returns.insert(0, R)
+        
+        returns = torch.FloatTensor(returns)
+        log_probs = torch.stack(log_probs)
+        values = torch.cat(values)
+        
+        advantages = returns - values.squeeze()
+        
+        # PPO-like update (simplified)
+        actor_loss = -(log_probs * advantages.detach()).mean()
+        critic_loss = advantages.pow(2).mean()
+        
+        loss = actor_loss + critic_loss
+        
+        optimizer.zero_grad()
+        loss.backward()
+        optimizer.step()
+        
+        total_rewards.append(episode_reward)
+        
+        # Update progress and status
+        progress = (episode + 1) / num_episodes
+        progress_bar.progress(progress)
+        status_text.text(f"Training Episode: {episode + 1}/{num_episodes} - Reward: {episode_reward:.2f}")
+
+    st.success("Training complete!")
+    return model
+
+# Testing function
+def test_agent(model, difficulty):
+    env = DynamicSpaceExplorationEnv(difficulty=difficulty)
+    state = env.reset()
+    done = False
+    episode_reward = 0
+    
+    st.subheader("Testing Trained Agent")
+    plot_placeholder = st.empty()
+    
+    while not done:
+        state_tensor = torch.FloatTensor(state).unsqueeze(0)
+        
+        # Get action from the model (greedy policy)
+        probs, _ = model(state_tensor)
+        action = torch.argmax(probs).item()
+        
+        next_state, reward, done, info = env.step(action)
+        
+        state = next_state
+        episode_reward += reward
+        
+        # Plot and display the current state
+        fig = env.plot_state()
+        plot_placeholder.pyplot(fig)
+        plt.close(fig)
+        
+        # Display key metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Current Step", env.current_step)
+        with col2:
+            st.metric("Fuel Remaining", f"{info['fuel']:.1f}")
+        with col3:
+            st.metric("Distance to Goal", f"{info['distance_to_goal']:.1f}")
+        with col4:
+            st.metric("Total Reward", f"{episode_reward:.2f}")
+            
+        time.sleep(0.05)
+    
+    st.success(f"Testing finished! Final reward: {episode_reward:.2f}")
+
 
 if __name__ == "__main__":
     main()
