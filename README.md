@@ -20,7 +20,7 @@ The agent (🚀) must learn to **navigate to a goal**, while avoiding obstacles,
 
 ---
 
-## 📊 Demo / Live App : https://spacezerogravity.streamlit.app/
+## 📊 Demo / Live App :  http://192.168.166.204:8501
 You can run the interactive demo locally or deploy it:  
 
 ### 🔹 Run Locally
